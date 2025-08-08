@@ -40,7 +40,7 @@ def get_posicoes_porta():
     return posicoes
 
 
-def mover(dx, dy, jogador, mapa, bau_com_chave):
+def mover(dx, dy, jogador, mapa, bau_com_chave, bau_com_espada):
     x_atual, y_atual = jogador["x"], jogador["y"]
     nx, ny = jogador["x"] + dx, jogador["y"] + dy
 
@@ -64,9 +64,37 @@ def mover(dx, dy, jogador, mapa, bau_com_chave):
             if (nx, ny) == bau_com_chave:
                 jogador["tem_chave"] = True
                 print("Você encontrou a CHAVE!")
+            elif(nx, ny) == bau_com_espada:
+                jogador["tem_espada"] = True
+                print("Você encontrou a ESPADA!, de durabilidade 3")
             # Remove o baú após abertura
             # mapa[nx][ny] = 'V'
             # jogador["x"], jogador["y"] = nx, ny
+        
+        elif destino == 'I':
+            print("você encontrou um inimigo!")
+            if jogador["tem_espada"]:
+                mapa[nx][ny] = 'V'
+                jogador["vida_espada"] -= 1
+                print("você eliminou um inimigo, durabilidade: ", jogador["vida_espada"])
+                if jogador["vida_espada"] <= 0:
+                    jogador["tem_espada"] = False
+                    print("Sua espada quebrou")
+            else:
+                jogador["vida"] -= 1
+                print("você encontrou um inimigo e foi atacado!\nVidas restantes:", jogador["vida"])
+                if jogador["vida"] <= 0:
+                    print("Você perdeu todas as vidas!\nGAME OVER!")
+                    pygame.quit()
+                    exit()
+        
+        elif destino == 'T':
+            jogador["vida"] -= 2
+            print("você caiu em uma armadilha!\nVidas restantes:", jogador["vida"])
+            if jogador["vida"] <= 0:
+                print("Você perdeu todas as vidas!\nGAME OVER!")
+                pygame.quit()
+                exit()
 
         elif destino == 'V':
             mapa[nx][ny] = 'J'
@@ -95,6 +123,7 @@ def gerar_mapa():
             "y": pos_jogador[1],
             "tem_chave": False,
             "tem_espada": False,
+            "vida_espada": 3,
             "vida": 3
         }
 
@@ -124,6 +153,7 @@ def gerar_mapa():
             baus.append(pos_bau)
 
         bau_com_chave = random.choice(baus)
+        bau_com_espada = random.choice(baus)
 
         for _ in range(2):
             for pos in posicoes_livres:
@@ -133,7 +163,7 @@ def gerar_mapa():
                     break
 
         if existe_caminho(mapa, pos_jogador, pos_saida):
-            return mapa, jogador, bau_com_chave
+            return mapa, jogador, bau_com_chave, bau_com_espada
 
 
 # ========== FUNÇÃO DE DESENHO ==========
@@ -180,7 +210,7 @@ def main():
     pygame.display.set_caption("Mapa Gerado com CSP")
     fonte = pygame.font.SysFont(None, 36)
 
-    mapa, jogador, bau_com_chave = gerar_mapa()
+    mapa, jogador, bau_com_chave, bau_com_espada = gerar_mapa()
     clock = pygame.time.Clock()
     rodando = True
 
@@ -195,15 +225,15 @@ def main():
                 rodando = False
             elif evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_r:
-                    mapa, jogador, bau_com_chave = gerar_mapa()
+                    mapa, jogador, bau_com_chave, bau_com_espada = gerar_mapa()
                 elif evento.key == pygame.K_UP:
-                    mover(-1, 0, jogador, mapa, bau_com_chave)
+                    mover(-1, 0, jogador, mapa, bau_com_chave, bau_com_espada)
                 elif evento.key == pygame.K_DOWN:
-                    mover(1, 0, jogador, mapa, bau_com_chave)
+                    mover(1, 0, jogador, mapa, bau_com_chave, bau_com_espada)
                 elif evento.key == pygame.K_LEFT:
-                    mover(0, -1, jogador, mapa, bau_com_chave)
+                    mover(0, -1, jogador, mapa, bau_com_chave, bau_com_espada)
                 elif evento.key == pygame.K_RIGHT:
-                    mover(0, 1, jogador, mapa, bau_com_chave)
+                    mover(0, 1, jogador, mapa, bau_com_chave, bau_com_espada)
 
         clock.tick(60)
     pygame.quit()
