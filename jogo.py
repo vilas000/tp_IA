@@ -66,6 +66,25 @@ def obter_posicoes_disponiveis(mapa):
     random.shuffle(posicoes)
     return posicoes
 
+def verificar_caminhos_criticos(mapa, contexto):
+    """Verifica as restrições de caminho caras APÓS uma solução completa ser encontrada."""
+    pos_jogador = contexto.get('JOGADOR')
+    pos_chave = contexto.get('CHAVE')
+    pos_saida = contexto.get('SAIDA')
+
+    # Garante que o jogador pode chegar à chave
+    if not existe_caminho(mapa, pos_jogador, pos_chave):
+        print("Falha na validação final: Sem caminho do Jogador para a Chave.")
+        return False
+        
+    # Garante que, da chave, é possível chegar à saída
+    if not existe_caminho(mapa, pos_chave, pos_saida):
+        print("Falha na validação final: Sem caminho da Chave para a Saída.")
+        return False
+        
+    # Se todos os caminhos críticos existem, a solução é válida.
+    return True
+
 def eh_caminho_valido_parcial(mapa, contexto):
     pos_jogador = contexto.get('JOGADOR')
     pos_chave = contexto.get('CHAVE')
@@ -97,16 +116,31 @@ def eh_distribuicao_valida(contexto, tipo_item_atual, pos_atual):
         pos_chave = contexto.get('CHAVE')
         if pos_chave and distancia_manhattan(pos_atual, pos_chave) < 5:
             return False
+        
+    if tipo_item_atual.startswith('BAU') or tipo_item_atual in ['CHAVE', 'ESPADA']:
+        for tipo, pos in contexto.items():
+            if (tipo.startswith('BAU') or tipo in ['CHAVE', 'ESPADA']) and tipo != tipo_item_atual:
+                if distancia_manhattan(pos_atual, pos) < 3:
+                    return False
 
     return True
 
-def resolver_backtracking(mapa, itens_a_colocar, contexto):
-    """Função recursiva que tenta posicionar os itens no mapa. (VERSÃO MELHORADA)"""
+# Em ========== FUNÇÕES DE GERAÇÃO (BACKTRACKING) ==========
+
+def resolver_backtracking(mapa, itens_a_colocar, contexto, estado_busca):
+    """Função recursiva que tenta posicionar os itens no mapa. (VERSÃO COM FUSÍVEL DE SEGURANÇA)"""
+    
+    # ===== NOSSO FUSÍVEL DE SEGURANÇA =====
+    estado_busca['passos'] += 1
+    if estado_busca['passos'] > estado_busca['limite_passos']:
+        return False, None, None # ABORTAR! A busca está demorando demais.
+
     if not itens_a_colocar:
         return True, mapa, contexto
 
     item_atual, tipo_item = itens_a_colocar[0]
     
+    # ... (o resto da lógica da função, como get_posicoes_porta, continua igual) ...
     if tipo_item in ['JOGADOR', 'SAIDA']:
         posicoes_candidatas = get_posicoes_porta()
         random.shuffle(posicoes_candidatas)
@@ -123,56 +157,88 @@ def resolver_backtracking(mapa, itens_a_colocar, contexto):
             mapa[r][c] = item_atual
             contexto[tipo_item] = pos
             
-            # Agora temos duas verificações: caminho E distribuição
-            if eh_caminho_valido_parcial(mapa, contexto) and eh_distribuicao_valida(contexto, tipo_item, pos):
-                sucesso, mapa_final, contexto_final = resolver_backtracking(mapa, itens_a_colocar[1:], contexto)
+            if eh_distribuicao_valida(contexto, tipo_item, pos):
+                # Importante: Passe o 'estado_busca' na chamada recursiva!
+                sucesso, mapa_final, contexto_final = resolver_backtracking(mapa, itens_a_colocar[1:], contexto, estado_busca)
                 if sucesso:
                     return True, mapa_final, contexto_final
 
+            # Backtrack
             mapa[r][c] = char_original
             del contexto[tipo_item]
 
     return False, None, None
 
 def gerar_mapa_com_backtracking():
-    """Função principal para iniciar a geração do mapa. (VERSÃO MELHORADA)"""
+    """Função principal para iniciar a geração do mapa. (VERSÃO FINAL OTIMIZADA COM FUSÍVEL)"""
     print("Iniciando geração com Backtracking e regras de distribuição...")
-    while True:
+    
+    max_tentativas = 10 
+    tentativas = 0
+
+    while tentativas < max_tentativas:
+        tentativas += 1
+        
+        # ... (lógica de criação do mapa_base e itens_para_colocar continua igual) ...
         mapa_base = [['P' for _ in range(COLUNAS)] for _ in range(LINHAS)]
         for i in range(1, LINHAS - 1):
             for j in range(1, COLUNAS - 1):
                 mapa_base[i][j] = 'V'
         
-        # --- LÓGICA DE QUANTIDADE DE ITENS MELHORADA ---
+        # AQUI ESTÁ A DENSIDADE ALTA QUE CAUSA O PROBLEMA
         num_inimigos = int(round((AREA_MAPA / 10) * 1.1))
-        num_baus_extras = int(round((AREA_MAPA / 10) * 1.1))
-        
+        num_baus_extras = int(round((AREA_MAPA / 15) * 1.1)) 
+
         itens_para_colocar = [
-            ('J', 'JOGADOR'), 
-            ('S', 'SAIDA'), 
-            ('B', 'CHAVE'), 
-            ('B', 'ESPADA')
+            ('J', 'JOGADOR'), ('S', 'SAIDA'), ('B', 'CHAVE'), ('B', 'ESPADA')
         ]
         itens_para_colocar.extend([('B', f'BAU_{i}') for i in range(num_baus_extras)])
         itens_para_colocar.extend([('I', f'INIMIGO_{i}') for i in range(num_inimigos)])
         itens_para_colocar.extend([('T', f'ARMADILHA_{i}') for i in range(2)])
         
-        sucesso, mapa_final, contexto = resolver_backtracking(copy.deepcopy(mapa_base), itens_para_colocar, {})
+        itens_essenciais = itens_para_colocar[:4]
+        itens_randomizaveis = itens_para_colocar[4:]
+        random.shuffle(itens_randomizaveis)
+        itens_para_colocar = itens_essenciais + itens_randomizaveis
 
-        if sucesso:
-            print("Mapa válido gerado com sucesso!")
-            pos_jogador = contexto['JOGADOR']
-            
+        # ===== CRIAÇÃO DO ESTADO DE BUSCA PARA CADA TENTATIVA =====
+        estado_busca = {
+            'passos': 0,
+            'limite_passos': 500  # Limite de segurança. Ajuste se necessário.
+        }
+        print(f"Tentativa de geração nº {tentativas} (limite de {estado_busca['limite_passos']} passos)...")
+        
+        # Passe o 'estado_busca' para a função
+        sucesso_posicionamento, mapa_potencial, contexto_potencial = resolver_backtracking(
+            copy.deepcopy(mapa_base), itens_para_colocar, {}, estado_busca
+        )
+
+        # Adiciona uma verificação para saber se o limite foi atingido
+        if estado_busca['passos'] > estado_busca['limite_passos']:
+            print(f"Tentativa {tentativas} abortada: Limite de passos de busca atingido.")
+            continue # Pula para a próxima tentativa
+
+        if sucesso_posicionamento and verificar_caminhos_criticos(mapa_potencial, contexto_potencial):
+            print("Mapa válido gerado e validado com sucesso!")
+            # ... (resto da lógica para retornar o mapa e jogador) ...
+            pos_jogador = contexto_potencial['JOGADOR']
             jogador = {
                 "x": pos_jogador[0], "y": pos_jogador[1], "tem_chave": False,
                 "tem_espada": False, "vida_espada": 3, "vida": 3
             }
-            bau_com_chave = contexto['CHAVE']
-            bau_com_espada = contexto['ESPADA']
-            
-            return mapa_final, jogador, bau_com_chave, bau_com_espada
+            bau_com_chave = contexto_potencial['CHAVE']
+            bau_com_espada = contexto_potencial['ESPADA']
+            return mapa_potencial, jogador, bau_com_chave, bau_com_espada
         else:
-            print("Falha ao encontrar uma boa distribuição. Tentando novamente...")
+            if sucesso_posicionamento:
+                print(f"Posicionamento da tentativa {tentativas} bem-sucedido, mas falhou na validação de caminhos.")
+    
+    # Esta mensagem agora será exibida corretamente quando for impossível gerar o mapa
+    print(f"\nNÃO FOI POSSÍVEL GERAR UM MAPA VÁLIDO APÓS {max_tentativas} TENTATIVAS.")
+    print("A combinação de tamanho do mapa, número de itens e restrições de distância provavelmente torna a geração impossível.")
+    print("Sugestão: Aumente o mapa, reduza o número de itens ou diminua a distância mínima entre eles.")
+    pygame.quit()
+    exit()
 
 # ========== LÓGICA DO JOGO E MOVIMENTO ==========
 def mover(dx, dy, jogador, mapa, bau_com_chave, bau_com_espada):
