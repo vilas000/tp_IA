@@ -6,6 +6,7 @@ import imagens
 import config
 import tkinter as tk
 from tkinter import messagebox
+import time
 
 # ========== CONFIGURAÇÃO ==========
 # Comentários sobre configurações anteriores ou valores gerados aleatoriamente (atualmente comentados)
@@ -196,7 +197,7 @@ def gerar_mapa_com_backtracking(linhas, colunas, num_baus, num_inimigos):
     print("Iniciando geração com Backtracking e regras de distribuição...")
 
     area = linhas * colunas
-    max_tentativas = 10
+    max_tentativas = 20
     tentativas = 0
 
     while tentativas < max_tentativas:
@@ -242,7 +243,7 @@ def gerar_mapa_com_backtracking(linhas, colunas, num_baus, num_inimigos):
 
         # Se posicionamento foi bem sucedido e caminhos críticos válidos, retorna resultado
         if sucesso_posicionamento and verificar_caminhos_criticos(mapa_potencial, contexto_potencial, linhas, colunas):
-            print("Mapa válido gerado e validado com sucesso!")
+            print("Mapa válido gerado e validado com sucesso!\nPassos na busca:", estado_busca['passos'])
             pos_jogador = contexto_potencial['JOGADOR']
             # Cria estrutura de dados do jogador com posições e status inicial
             jogador = {
@@ -338,7 +339,7 @@ def mover(dx, dy, jogador, mapa, bau_com_chave, bau_com_espada, linhas, colunas)
             return
 
 
-def desenhar_hud(tem_chave, tela, fonte, jogador):
+def desenhar_hud(tela, jogador):
     # Define cores e tamanho dos elementos da HUD (Heads-Up Display)
     HUD_BG = (60, 60, 60)  # Fundo cinza escuro para os retângulos da HUD
     BORDER_COLOR = (255, 255, 255)  # Borda branca dos retângulos
@@ -351,14 +352,14 @@ def desenhar_hud(tem_chave, tela, fonte, jogador):
     pygame.draw.rect(tela, HUD_BG, (x + 4, y - 15, *RECT_SIZE))       # Fundo do retângulo
     pygame.draw.rect(tela, BORDER_COLOR, (x + 4, y - 15, *RECT_SIZE), 2)  # Borda do retângulo
     if jogador["tem_chave"] == True:   # Se o jogador possui a chave, desenha o ícone da chave
-        tela.blit(imagens.img_chave, (x + 4, y - 15))  # Blita a imagem da chave na posição
+        tela.blit(imagens.img_chave, (x + 6, y - 12))  # Blita a imagem da chave na posição
 
     # --- Retângulo e ícone da espada ---
     x += RECT_SIZE[0] + 10  # Move a posição x para o próximo retângulo, com espaço entre eles
     pygame.draw.rect(tela, HUD_BG, (x + 4, y - 15, *RECT_SIZE))       # Fundo do retângulo
     pygame.draw.rect(tela, BORDER_COLOR, (x + 4, y - 15, *RECT_SIZE), 2)  # Borda do retângulo
     if jogador["tem_espada"] == True:  # Se o jogador possui a espada, desenha o ícone da espada
-        tela.blit(imagens.img_espada, (x + 4, y - 15))
+        tela.blit(imagens.img_espada, (x + 6, y - 12))
 
     # --- Desenha os corações que representam a vida do jogador ---
     x += RECT_SIZE[0] + 20  # Move mais para a direita para desenhar os corações
@@ -368,7 +369,7 @@ def desenhar_hud(tem_chave, tela, fonte, jogador):
 
 
 # ========== FUNÇÃO DE DESENHO DO MAPA ==========  
-def desenhar_mapa(tela, mapa, fonte, linhas, colunas):
+def desenhar_mapa(tela, mapa, linhas, colunas):
     # Percorre todas as células do mapa para desenhá-las na tela
     for i in range(linhas):
         for j in range(colunas):
@@ -445,8 +446,6 @@ def dados_jogador_gui():
                 baus = int(entry_baus.get())  # Número de baús digitado
                 inimigos = int(entry_inimigos.get())  # Número de inimigos digitado
                 # Valores recomendados baseados na área do mapa
-                rec_baus = round(area // 10)
-                rec_inimigos = round((area * 1.1) // 10)
                 resultado['baus'] = baus
                 resultado['inimigos'] = inimigos
                 janela2.destroy()  # Fecha esta janela
@@ -457,15 +456,15 @@ def dados_jogador_gui():
         janela2.title("Configuração do Mapa - Parte 2")
 
         # Labels e entradas para baús e inimigos, com recomendações
-        max_baus = round(area // 10)
-        max_inimigos = round((area * 1.1) // 10)
+        rec_baus = round(area // 10)
+        rec_inimigos = round((area * 1.1) // 10)
 
-        label_baus = tk.Label(janela2, text=f"Digite o número de baús (recomendado até {max_baus}):")
+        label_baus = tk.Label(janela2, text=f"Digite o número de baús (recomendado até {rec_baus}):")
         label_baus.grid(row=0, column=0, sticky="w")
         entry_baus = tk.Entry(janela2)
         entry_baus.grid(row=0, column=1)
 
-        label_inimigos = tk.Label(janela2, text=f"Digite o número de inimigos (recomendado até {max_inimigos}):")
+        label_inimigos = tk.Label(janela2, text=f"Digite o número de inimigos (recomendado até {rec_inimigos}):")
         label_inimigos.grid(row=1, column=0, sticky="w")
         entry_inimigos = tk.Entry(janela2)
         entry_inimigos.grid(row=1, column=1)
@@ -497,15 +496,18 @@ def main():
     fonte = pygame.font.SysFont(None, 36)  # Fonte padrão para texto (não usada muito aqui)
 
     # Gera o mapa inicial, jogador, baú da chave e baú da espada usando backtracking
+    start_time = time.time()
     mapa, jogador, bau_com_chave, bau_com_espada = gerar_mapa_com_backtracking(linhas, colunas, baus, inimigos)
-    
+    end_time = time.time()
+    print(f"Tempo de geração do mapa: {end_time - start_time:.4f} segundos")
+
     clock = pygame.time.Clock()  # Controla a taxa de atualização da tela
     rodando = True  # Flag para manter o loop do jogo rodando
 
     while rodando:
         tela.fill((0, 0, 0))  # Limpa a tela (preto)
-        desenhar_mapa(tela, mapa, fonte, linhas, colunas)  # Desenha o mapa atual
-        desenhar_hud(jogador["tem_chave"], tela, fonte, jogador)  # Desenha a HUD com informações do jogador
+        desenhar_mapa(tela, mapa, linhas, colunas)  # Desenha o mapa atual
+        desenhar_hud(tela, jogador)  # Desenha a HUD com informações do jogador
         pygame.display.flip()  # Atualiza a tela com tudo que foi desenhado
 
         # Lida com eventos do teclado e janela
