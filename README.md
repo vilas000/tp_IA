@@ -3,7 +3,7 @@
 Este projeto apresenta um gerador de mapas para um jogo 2D de exploração RPG, desenvolvido como parte da disciplina de Inteligência Artificial. A principal característica deste sistema é o uso de um algoritmo de backtracking para garantir que cada mapa gerado processualmente seja não apenas aleatório, mas também válido, jogável e justo, de acordo com um conjunto de regras predefinidas.
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/47fc81ba-4937-4324-84a3-74b6dd337b57" alt="Gameplay do Jogo" width="600"/>
+  <img src="https://github.com/user-attachments/assets/98a0122f-c698-423e-928b-e9cf834c4b32" alt="Gameplay do Jogo" width="600"/>
 </div>
 
 ## Sobre o Projeto
