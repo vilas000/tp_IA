@@ -2,8 +2,9 @@
 
 Este projeto apresenta um gerador de mapas para um jogo 2D de exploração RPG, desenvolvido como parte da disciplina de Inteligência Artificial. A principal característica deste sistema é o uso de um algoritmo de backtracking para garantir que cada mapa gerado processualmente seja não apenas aleatório, mas também válido, jogável e justo, de acordo com um conjunto de regras predefinidas.
 
-<img width="696" height="570" alt="image" src="https://github.com/user-attachments/assets/47fc81ba-4937-4324-84a3-74b6dd337b57" />
-
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/47fc81ba-4937-4324-84a3-74b6dd337b57" alt="Gameplay do Jogo" width="600"/>
+</div>
 
 ## Sobre o Projeto
 O desafio central de muitos jogos que utilizam geração procedural é criar níveis que façam sentido. Um mapa aleatório pode, por acaso, ser impossível de resolver (ex: a chave estar em um local inacessível).
@@ -65,6 +66,15 @@ Este projeto foi desenvolvido como avaliação final para a disciplina
 
 BCC325 - Inteligência Artificial da Universidade Federal de Ouro Preto (UFOP), no segundo semestre de 2025, ministrada pelo Prof. Jadson Castro Gertrudes. O objetivo do trabalho era aplicar conceitos e técnicas de IA para resolver um problema prático , e a técnica escolhida foi a de Algoritmos de Satisfação de Restrições. 
 
+## Membros
+[Camile Reis](https://github.com/camile16)
 
+[Gabriel Vilas](https://github.com/vilas000)
+
+[Gustavo Ferreira](https://github.com/gusthcf)
+
+[João Henrique](https://github.com/JoaoHPS06)
+
+[Marcus Vinicius](https://github.com/MarcusViniAraujo)
 
 
